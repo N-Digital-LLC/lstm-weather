@@ -1,0 +1,29 @@
+# Cached data and per-run artifacts (keep the dirs, ignore contents)
+backend/data/*
+backend/runs/*
+!backend/data/.gitkeep
+!backend/runs/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Node / Next.js
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+.env*.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
