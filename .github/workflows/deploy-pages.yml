@@ -2,6 +2,7 @@ name: Deploy results site to GitHub Pages
 
 # Builds the backend-free static results site (frontend) and publishes it to
 # GitHub Pages so examiners can open it via a URL — no download or install.
+# Re-run trigger: Pages enabled in repo settings.
 
 on:
   push:
