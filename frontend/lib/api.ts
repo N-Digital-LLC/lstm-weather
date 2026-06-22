@@ -12,8 +12,10 @@ export const IS_STATIC = process.env.NEXT_PUBLIC_STATIC === "1";
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") || "http://localhost:8000";
 
-// Snapshots are served from the site root; the package must be served at root.
-const SNAP_BASE = "/snapshots";
+// Snapshots live in /public/snapshots. Prefix with the deploy base path so the
+// app works both at the domain root and under a subpath (e.g. GitHub Pages).
+export const BASE_PATH = (process.env.NEXT_PUBLIC_BASE_PATH || "").replace(/\/$/, "");
+const SNAP_BASE = `${BASE_PATH}/snapshots`;
 
 async function getJSON<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, { cache: "no-store" });

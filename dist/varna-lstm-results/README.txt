@@ -1,61 +1,62 @@
-Varna Weather LSTM — results explorer (offline package)
-=======================================================
+Varna Weather LSTM — разглеждане на резултатите (офлайн пакет)
+=============================================================
+Това е самостоятелен пакет САМО ЗА ЧЕТЕНЕ с готовите резултати от
+експериментите с LSTM модела за времето. Работи изцяло във Вашия уеб
+браузър — няма обучение на модел и нищо не се изпраща през интернет.
+Всички числа и графики идват от JSON файловете в папката „snapshots“
+(реални резултати, записани от обучения модел).
 
-This is a self-contained, READ-ONLY snapshot of the finished LSTM weather
-experiments. It runs entirely in your web browser — there is no model
-training and nothing is sent over the internet. All numbers and charts come
-from JSON files bundled in the "snapshots" folder (real results, captured
-from the trained model).
-
-What you can explore
---------------------
-  • Forecast      — pick a date/horizon; see the LSTM vs. the baselines and
-                    the actual measured temperature (a fixed set of real
-                    backtests is precomputed).
-  • Training      — the full table of all 128 runs; click "View" on any run.
-  • Run report    — config, data split, test metrics, training curve, and
-                    RMSE / MAE / Bias vs. forecast-horizon charts.
-  • Comparison    — put several runs side by side.
+Какво можете да разгледате
+--------------------------
+  • Прогноза (Forecast)   — избирате дата/хоризонт и виждате LSTM срещу
+                            базовите модели и реално измерената температура
+                            (предварително изчислен набор от реални backtest-ове).
+  • Обучение (Training)   — пълната таблица с всичките 128 пускания (runs);
+                            натиснете „View“ на което и да е пускане.
+  • Доклад за пускане     — конфигурация, разделяне на данните, тестови
+    (Run report)            метрики, крива на обучение и графики RMSE / MAE /
+                            Bias спрямо хоризонта на прогнозата.
+  • Сравнение (Comparison)— поставяте няколко пускания едно до друго.
 
 
-HOW TO RUN IT
-=============
+КАК ДА ГО СТАРТИРАТЕ
+====================
+Това е статичен уебсайт и трябва да се обслужва от малък локален уеб сървър
+(само да отворите index.html директно НЯМА да работи, защото браузърът
+блокира зареждането на файловете с данни от път от вида file://).
 
-A static website must be served by a tiny local web server (just opening
-index.html directly will NOT work because the browser blocks loading the
-data files from a file:// path).
+Вариант 1 — двоен клик върху start.bat  (препоръчително)
+-------------------------------------------------------
+  1. Щракнете два пъти върху  start.bat
+  2. Отваря се малък черен прозорец (локалният сървър) и браузърът Ви се
+     отваря на адрес  http://localhost:8099/
+  3. Разгледайте приложението. Когато приключите, затворете черния прозорец.
 
-Option 1 — double-click start.bat  (recommended)
-------------------------------------------------
-  1. Double-click  start.bat
-  2. A small black window opens (the local server) and your browser opens at
-     http://localhost:8099/
-  3. Browse the app. When finished, close the black window.
+  start.bat автоматично използва Python или Node.js, ако някой от двата е
+  инсталиран (на повечето компютри има поне един). Ако не намери нито един,
+  инсталирайте Python от  https://www.python.org/downloads/
+  (сложете отметка на „Add python.exe to PATH“) и след това щракнете отново
+  два пъти върху start.bat.
 
-  start.bat automatically uses Python or Node.js if either is installed
-  (most machines have one). If neither is found, install Python from
-  https://www.python.org/downloads/  (tick "Add python.exe to PATH"),
-  then double-click start.bat again.
-
-Option 2 — run a server yourself
---------------------------------
-  Open a terminal in THIS folder and run any one of:
+Вариант 2 — стартирайте сървър ръчно
+------------------------------------
+  Отворете терминал В ТАЗИ папка и изпълнете която и да е от командите:
 
     python -m http.server 8099
     py -m http.server 8099
     npx serve -l 8099 .
 
-  Then open  http://localhost:8099/  in your browser.
+  След това отворете  http://localhost:8099/  във Вашия браузър.
 
-Option 3 — VS Code
-------------------
-  Open this folder in VS Code, install the "Live Server" extension,
-  right-click index.html → "Open with Live Server".
+Вариант 3 — VS Code
+-------------------
+  Отворете тази папка във VS Code, инсталирайте разширението „Live Server“,
+  щракнете с десен бутон върху index.html → „Open with Live Server“.
 
 
-Notes
------
-  • Everything works offline; no backend and no internet are required.
-  • The default port is 8099. If it is busy, edit PORT in start.bat or pass a
-    different port to the commands above.
-  • Weather data: Open-Meteo (ECMWF ERA5), CC BY 4.0.
+Бележки
+-------
+  • Всичко работи офлайн; не са необходими нито бекенд, нито интернет.
+  • Портът по подразбиране е 8099. Ако е зает, променете PORT в start.bat
+    или подайте друг порт към командите по-горе.
+  • Данни за времето: Open-Meteo (ECMWF ERA5), CC BY 4.0.

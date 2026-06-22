@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BASE_PATH } from "@/lib/api";
 
 const FINAL_RUN = "2026-06-19_11-00-30__h128_l1_L168_lr0.001";
 
@@ -57,7 +58,7 @@ function FigureCard({ fig }: { fig: Figure }) {
       <div className="flex justify-center rounded-lg bg-white p-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={fig.src}
+          src={`${BASE_PATH}${fig.src}`}
           alt={`Фиг. ${fig.num}`}
           className={`h-auto w-full ${fig.narrow ? "max-w-2xl" : "max-w-4xl"}`}
         />
