@@ -12,11 +12,15 @@ Lifecycle of a run:
 
 from __future__ import annotations
 
+import itertools
 import queue
 import threading
 import traceback
 
 from . import config, store, train
+
+# Hyperparameters that may be swept, mapped to the coercion applied to each value.
+SWEEPABLE = {"hidden_size": int, "num_layers": int, "lookback": int, "lr": float}
 
 # (run_id, full_cfg) tuples awaiting the single GPU worker.
 _q: "queue.Queue[tuple[str, dict]]" = queue.Queue()
@@ -77,18 +81,36 @@ def enqueue(overrides: dict | None = None) -> str:
     return run_id
 
 
-def enqueue_sweep(hidden_sizes: list[int], shared: dict | None = None) -> list[str]:
-    """Queue one run per hidden size with **identical** data/seed/stride — the fair comparison.
+def enqueue_sweep(
+    grids: dict[str, list], shared: dict | None = None, *, mode: str = "one_factor"
+) -> list[str]:
+    """Queue a sweep over one or more hyperparameters, all as tuning runs.
 
-    Only ``hidden_size`` varies across the runs (BUILD_SPEC.md 8 / 14). All are tuning runs.
+    ``grids`` maps a :data:`SWEEPABLE` key to the list of values to try, e.g.
+    ``{"hidden_size": [64, 128, 256], "lr": [1e-3, 5e-4]}``. ``shared`` carries the held-constant
+    config (stride/batch/etc.) so every run is the fair comparison the spec calls for.
+
+    Modes:
+      - ``"one_factor"``: vary one param at a time over its list, others at their ``shared`` value.
+      - ``"grid"``: the cartesian product of every list (the full matrix).
     """
     shared = dict(shared or {})
     shared["is_final"] = False                            # a sweep is always tuning
+    grids = {k: [SWEEPABLE[k](x) for x in v] for k, v in grids.items() if k in SWEEPABLE and v}
     run_ids: list[str] = []
-    for h in hidden_sizes:
-        overrides = dict(shared)
-        overrides["hidden_size"] = int(h)
-        run_ids.append(enqueue(overrides))
+
+    if mode == "grid":
+        keys = list(grids)
+        for combo in itertools.product(*(grids[k] for k in keys)):
+            overrides = dict(shared)
+            overrides.update(dict(zip(keys, combo)))
+            run_ids.append(enqueue(overrides))
+    else:                                                 # one_factor
+        for key, values in grids.items():
+            for v in values:
+                overrides = dict(shared)
+                overrides[key] = v
+                run_ids.append(enqueue(overrides))
     return run_ids
 
 

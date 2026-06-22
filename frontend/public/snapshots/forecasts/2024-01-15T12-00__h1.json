@@ -1,0 +1,1 @@
+{"location": "Varna", "issued_for": "2024-01-15T12:00:00", "horizon_hours": 1, "unit": "C", "run_id": "2026-06-19_11-00-30__h128_l1_L168_lr0.001", "model": "lstm", "forecast": [{"datetime": "2024-01-15T13:00:00", "lstm": 6.624, "persistence": 6.2, "diurnal": 4.2, "climatology": 3.404, "actual": 7.3}]}

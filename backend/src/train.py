@@ -138,7 +138,7 @@ def train_one(cfg: dict, run_id: str | None = None) -> str:
     print(f"[train] {run_id} on {next(model.parameters()).device} | features={prepared.n_features}")
     opt = torch.optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.SmoothL1Loss()
-    grad_scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+    grad_scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
 
     best_val_rmse = float("inf")
     best_state = None
@@ -243,7 +243,9 @@ def train_one(cfg: dict, run_id: str | None = None) -> str:
         metrics, _skill, horizon, lstm_pred, actual, starts = _evaluate_split(
             model, prepared, "val", batch=batch, use_amp=use_amp, with_mape=False
         )
-        card["val_metrics"] = {"lstm": {k: metrics["lstm"][k] for k in ("mae_C", "rmse_C")}}
+        card["val_metrics"] = {
+            "lstm": {k: metrics["lstm"][k] for k in ("mae_C", "rmse_C", "bias_C", "r2")}
+        }
         card["val_horizon"] = horizon
         card["test_metrics"] = None
         card["skill_vs"] = None

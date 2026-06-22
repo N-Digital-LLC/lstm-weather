@@ -1,9 +1,20 @@
 # Python 3.11
-# Install torch with CUDA separately if you want GPU, e.g.:
-#   pip install torch --index-url https://download.pytorch.org/whl/cu121
-# The pinned torch below is the CPU/default wheel; override per your CUDA version.
+#
+# GPU (default here): the CUDA 12.8 (cu128) wheel below supports modern NVIDIA
+# GPUs including RTX 50-series / Blackwell (sm_120), which the old cu121 / 2.3.1
+# wheels do NOT. The --extra-index-url makes pip pull the +cu128 build of torch
+# while every other dependency still comes from PyPI.
+#
+# CPU-only fallback (no NVIDIA GPU): drop the --extra-index-url line and use a
+# plain pin instead, e.g.:
+#   torch==2.7.1
+#
+# Verify after install:
+#   python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
+#   -> expect e.g. 2.7.1+cu128 True
 
-torch==2.3.1
+--extra-index-url https://download.pytorch.org/whl/cu128
+torch==2.7.1+cu128
 numpy==1.26.4
 pandas==2.2.2
 pyarrow==16.1.0

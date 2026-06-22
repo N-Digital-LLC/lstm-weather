@@ -65,9 +65,17 @@ def now_iso() -> str:
 
 
 def make_run_id(cfg: dict) -> str:
-    """``<YYYY-MM-DD_HH-MM-SS>__h{hidden}_l{layers}``."""
+    """``<YYYY-MM-DD_HH-MM-SS>__h{hidden}_l{layers}_L{lookback}_lr{lr}``.
+
+    Encodes the swept hyperparameters so per-param/matrix sweep runs are distinguishable on disk
+    (otherwise lr/lookback-only sweeps would share a stem). ``runner._unique_run_id`` still
+    de-duplicates any remaining same-second collisions.
+    """
     ts = datetime.now(_TZ).strftime("%Y-%m-%d_%H-%M-%S")
-    return f"{ts}__h{int(cfg['hidden_size'])}_l{int(cfg['num_layers'])}"
+    return (
+        f"{ts}__h{int(cfg['hidden_size'])}_l{int(cfg['num_layers'])}"
+        f"_L{int(cfg['lookback'])}_lr{float(cfg['lr']):g}"
+    )
 
 
 # --- card.json read/write -----------------------------------------------------

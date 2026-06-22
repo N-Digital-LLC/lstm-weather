@@ -4,26 +4,27 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Varna Weather LSTM",
-  description: "Hourly weather forecasting for Varna with an LSTM — train, compare, forecast.",
+  description: "Почасова прогноза на времето за Варна с LSTM — обучение, сравнение, прогноза.",
 };
 
 const NAV = [
-  { href: "/", label: "Forecast" },
-  { href: "/training", label: "Training" },
-  { href: "/comparison", label: "Comparison" },
+  { href: "/", label: "Прогноза" },
+  { href: "/training", label: "Обучение" },
+  { href: "/comparison", label: "Сравнение" },
+  { href: "/report", label: "Доклад" },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="bg">
       <body>
         <div className="min-h-screen">
           <header className="border-b border-slate-800 bg-slate-900/70 backdrop-blur">
-            <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+            <div className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-4">
               <div className="flex items-center gap-3">
                 <span className="text-lg font-bold tracking-tight">Varna Weather LSTM</span>
                 <span className="hidden text-xs text-slate-500 sm:inline">
-                  hourly ERA5 · PyTorch
+                  почасови данни ERA5 · PyTorch
                 </span>
               </div>
               <nav className="flex gap-1">
@@ -39,9 +40,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </nav>
             </div>
           </header>
-          <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
-          <footer className="mx-auto max-w-7xl px-6 py-8 text-xs text-slate-500">
-            Weather data by Open-Meteo (ECMWF ERA5), CC BY 4.0.
+          <main className="mx-auto max-w-[1600px] px-6 py-8">{children}</main>
+          <footer className="mx-auto max-w-[1600px] px-6 py-8 text-xs text-slate-500">
+            Метеорологични данни от Open-Meteo (ECMWF ERA5), CC BY 4.0.
           </footer>
         </div>
       </body>

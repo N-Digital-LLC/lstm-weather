@@ -37,7 +37,7 @@ TARGET = "temperature_2m"
 
 # --- Windowing ----------------------------------------------------------------
 LOOKBACK = 168          # L (one week of hours)
-HORIZON = 1             # H (set 24 for the multi-step phase)
+HORIZON = 24            # H (multi-step: next 24 hours; set 1 for single-step)
 STRIDE = 1              # 12-24 for fast sweeps, 1 for the final run
 
 # --- LSTM hyperparameters -----------------------------------------------------

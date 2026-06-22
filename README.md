@@ -57,16 +57,27 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-**GPU notes.** `requirements.txt` pins the default `torch` wheel. For CUDA acceleration install the
-matching build, e.g.:
+**GPU notes.** `requirements.txt` now defaults to the **CUDA 12.8 (`cu128`)** `torch` wheel
+(`torch==2.7.1+cu128`) via an `--extra-index-url`, so `pip install -r requirements.txt` gives you a
+GPU build out of the box. This build supports modern NVIDIA GPUs including the **RTX 50-series /
+Blackwell (`sm_120`)** — the older `cu121` / `torch 2.3.1` wheels do **not** support Blackwell and
+will fail or silently never see the GPU.
+
+If you have **no NVIDIA GPU**, drop the `--extra-index-url` line in `requirements.txt` and use a
+plain CPU pin instead (e.g. `torch==2.7.1`).
+
+Verify the install actually sees CUDA:
 
 ```bash
-pip install torch --index-url https://download.pytorch.org/whl/cu121
+python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
+# expect e.g. 2.7.1+cu128 True
 ```
 
 The code auto-selects the device (`cuda` if available, else `cpu`) and prints it at startup. Each
 run also prints `next(model.parameters()).device` and per-epoch time so an accidental CPU run is
-obvious. Training ~500k windows on CPU is very slow — use a CUDA GPU for reported runs.
+obvious. A torch build with a `+cpu` suffix (or any non-`cu128` wheel on a Blackwell card) is the
+usual cause of an unexpected CPU run. Training ~500k windows on CPU is very slow — use a CUDA GPU
+for reported runs.
 
 ### Frontend (Next.js)
 

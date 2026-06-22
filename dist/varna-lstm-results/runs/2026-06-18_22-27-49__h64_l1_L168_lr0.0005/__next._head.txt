@@ -1,0 +1,5 @@
+1:"$Sreact.fragment"
+2:I[97367,["/_next/static/chunks/3rdqn8rx95pw7.js","/_next/static/chunks/44p37290qsddb.js"],"ViewportBoundary"]
+3:I[97367,["/_next/static/chunks/3rdqn8rx95pw7.js","/_next/static/chunks/44p37290qsddb.js"],"MetadataBoundary"]
+4:"$Sreact.suspense"
+0:{"rsc":["$","$1","h",{"children":[null,["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Varna Weather LSTM"}],["$","meta","1",{"name":"description","content":"Почасова прогноза на времето за Варна с LSTM — обучение, сравнение, прогноза."}]]}]}]}],null]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"su9Kj7-sY5wNSzM-bfI0s"}

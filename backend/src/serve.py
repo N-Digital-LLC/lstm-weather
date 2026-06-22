@@ -21,7 +21,7 @@ import pandas as pd
 import torch
 
 from . import config, store
-from .features import Climatology, add_calendar_features
+from .features import Climatology, add_calendar_features, chronological_split_bounds
 from .models.lstm import build_from_config
 
 _df: pd.DataFrame | None = None
@@ -101,6 +101,47 @@ def load_run(run_id: str) -> LoadedRun:
     )
     _models[run_id] = loaded
     return loaded
+
+
+def data_split() -> dict:
+    """Canonical chronological train/val/test split of the cached archive.
+
+    Deterministic (70/15/15 by row count, never shuffled) and identical for every tuning run,
+    so the UI can show "which years are train/val/test" without needing a run to exist. The
+    ``final`` note reflects that final runs merge train+val and evaluate the held-out test years.
+    """
+    df = get_dataframe()
+    n = len(df)
+    train_end, val_end = chronological_split_bounds(n, config.TRAIN_FRAC, config.VAL_FRAC)
+    idx = df.index
+
+    def segment(start: int, end: int) -> dict:
+        if end <= start:
+            return {"years": "", "start": None, "end": None, "rows": 0}
+        return {
+            "years": f"{idx[start].year}-{idx[end - 1].year}",
+            "start": idx[start].isoformat(),
+            "end": idx[end - 1].isoformat(),
+            "rows": int(end - start),
+        }
+
+    return {
+        "location": "Varna",
+        "total_rows": int(n),
+        "fractions": {
+            "train": config.TRAIN_FRAC,
+            "val": config.VAL_FRAC,
+            "test": round(1.0 - config.TRAIN_FRAC - config.VAL_FRAC, 4),
+        },
+        "train": segment(0, train_end),
+        "val": segment(train_end, val_end),
+        "test": segment(val_end, n),
+        "note": (
+            "Strict chronological split (earliest→latest, never shuffled). Tuning runs train on "
+            "the train years and are judged on validation; the test years stay untouched. A final "
+            "run merges train+val and evaluates the test years exactly once."
+        ),
+    }
 
 
 def history(start: str | None, end: str | None, var: str) -> dict:

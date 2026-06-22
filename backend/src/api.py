@@ -54,12 +54,28 @@ class RunRequest(BaseModel):
 
 
 class SweepRequest(RunRequest):
-    hidden_sizes: list[int] = [64, 128, 256]
+    hidden_sizes: list[int] | None = None
+    num_layers_list: list[int] | None = None
+    lookback_list: list[int] | None = None
+    lr_list: list[float] | None = None
+    mode: str = "one_factor"                     # "one_factor" or "grid"
+
+    def grids(self) -> dict[str, list]:
+        g = {
+            "hidden_size": self.hidden_sizes,
+            "num_layers": self.num_layers_list,
+            "lookback": self.lookback_list,
+            "lr": self.lr_list,
+        }
+        return {k: v for k, v in g.items() if v}
 
     def shared(self) -> dict:
         ov = self.overrides()
-        ov.pop("hidden_sizes", None)
-        ov.pop("hidden_size", None)              # hidden varies across the sweep
+        for k in (
+            "hidden_sizes", "num_layers_list", "lookback_list", "lr_list", "mode",
+            "hidden_size", "num_layers", "lookback", "lr",  # swept params never go in shared
+        ):
+            ov.pop(k, None)
         return ov
 
 
@@ -79,6 +95,14 @@ def history(
     try:
         return serve.history(start, end, var)
     except (FileNotFoundError, KeyError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@app.get("/data/split")
+def data_split() -> dict:
+    try:
+        return serve.data_split()
+    except FileNotFoundError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
 
@@ -103,7 +127,10 @@ def create_run(req: RunRequest) -> dict:
 
 @app.post("/runs/sweep")
 def create_sweep(req: SweepRequest) -> dict:
-    run_ids = runner.enqueue_sweep(req.hidden_sizes, req.shared())
+    grids = req.grids()
+    if not grids:
+        raise HTTPException(status_code=400, detail="provide at least one *_list to sweep")
+    run_ids = runner.enqueue_sweep(grids, req.shared(), mode=req.mode)
     return {"run_ids": run_ids}
 
 
@@ -113,6 +140,7 @@ def list_runs() -> dict:
     for card in store.list_cards():
         training = card.get("training") or {}
         test = card.get("test_metrics") or {}
+        val = (card.get("val_metrics") or {}).get("lstm") or {}
         summaries.append(
             {
                 "run_id": card.get("run_id"),
@@ -123,7 +151,13 @@ def list_runs() -> dict:
                 "progress": card.get("progress"),
                 "is_final": (card.get("config") or {}).get("is_final", False),
                 "best_val_rmse_C": training.get("best_val_rmse_C"),
+                "val_mae_C": val.get("mae_C"),
+                "val_bias_C": val.get("bias_C"),
+                "val_r2": val.get("r2"),
                 "test_rmse_C": (test.get("lstm") or {}).get("rmse_C") if test else None,
+                "test_mae_C": (test.get("lstm") or {}).get("mae_C") if test else None,
+                "test_bias_C": (test.get("lstm") or {}).get("bias_C") if test else None,
+                "test_r2": (test.get("lstm") or {}).get("r2") if test else None,
                 "error": card.get("error"),
             }
         )
@@ -147,6 +181,7 @@ def compare_runs(ids: str = Query(..., description="comma-separated run_ids")) -
                 "status": card.get("status"),
                 "is_final": (card.get("config") or {}).get("is_final", False),
                 "best_val_rmse_C": training.get("best_val_rmse_C"),
+                "training": card.get("training"),
                 "val_metrics": card.get("val_metrics"),
                 "test_metrics": card.get("test_metrics"),
                 "skill_vs": card.get("skill_vs"),

@@ -30,6 +30,27 @@ def rmse(pred: np.ndarray, actual: np.ndarray) -> float:
     return float(np.sqrt(np.mean((pred - actual) ** 2)))
 
 
+def bias(pred: np.ndarray, actual: np.ndarray) -> float:
+    """Mean error (deg C). Positive means the model runs warm; negative means cold.
+
+    Unlike MAE/RMSE (magnitude only), this exposes a systematic over- or under-prediction.
+    """
+    return float(np.mean(pred - actual))
+
+
+def r2(pred: np.ndarray, actual: np.ndarray) -> float:
+    """Coefficient of determination: fraction of variance explained vs predicting the mean.
+
+    ``1 - SS_res / SS_tot``; 1.0 is perfect, 0.0 matches a constant-mean predictor, and it can
+    go negative when the model is worse than the mean. NaN if the actuals have no variance.
+    """
+    ss_res = float(np.sum((actual - pred) ** 2))
+    ss_tot = float(np.sum((actual - np.mean(actual)) ** 2))
+    if ss_tot < _EPS:
+        return float("nan")
+    return float(1.0 - ss_res / ss_tot)
+
+
 def mape(pred: np.ndarray, actual: np.ndarray) -> float:
     """Mean absolute percentage error (%). Near-zero actuals are masked out.
 
@@ -47,6 +68,16 @@ def rmse_per_horizon(pred: np.ndarray, actual: np.ndarray) -> list[float]:
     return [rmse(pred[:, k], actual[:, k]) for k in range(pred.shape[1])]
 
 
+def mae_per_horizon(pred: np.ndarray, actual: np.ndarray) -> list[float]:
+    """MAE at each horizon hour -> list of length ``horizon``."""
+    return [mae(pred[:, k], actual[:, k]) for k in range(pred.shape[1])]
+
+
+def bias_per_horizon(pred: np.ndarray, actual: np.ndarray) -> list[float]:
+    """Bias (mean error) at each horizon hour -> list of length ``horizon``."""
+    return [bias(pred[:, k], actual[:, k]) for k in range(pred.shape[1])]
+
+
 def skill_score(rmse_model: float, rmse_baseline: float) -> float:
     """``1 - rmse_model / rmse_baseline``; > 0 means the model beats the baseline."""
     if rmse_baseline < _EPS:
@@ -55,7 +86,12 @@ def skill_score(rmse_model: float, rmse_baseline: float) -> float:
 
 
 def basic_metrics(pred: np.ndarray, actual: np.ndarray, *, with_mape: bool = False) -> dict:
-    out = {"mae_C": round(mae(pred, actual), 4), "rmse_C": round(rmse(pred, actual), 4)}
+    out = {
+        "mae_C": round(mae(pred, actual), 4),
+        "rmse_C": round(rmse(pred, actual), 4),
+        "bias_C": round(bias(pred, actual), 4),
+        "r2": round(r2(pred, actual), 4),
+    }
     if with_mape:
         out["mape_pct"] = round(mape(pred, actual), 4)
     return out
@@ -71,7 +107,8 @@ def assemble_metrics(
     Returns ``(metrics, skill_vs, horizon)`` where:
       - ``metrics`` maps model -> {mae_C, rmse_C[, mape_pct]} (lstm + every baseline)
       - ``skill_vs`` maps baseline -> skill score of the LSTM against it
-      - ``horizon`` holds per-horizon RMSE arrays for the RMSE-vs-horizon chart
+      - ``horizon`` holds per-horizon RMSE arrays (flat, per model) plus nested ``mae`` and
+        ``bias`` blocks ({model -> per-horizon array}) for the extra charts
     """
     metrics: dict[str, dict] = {"lstm": basic_metrics(lstm_pred, actual, with_mape=True)}
     for name, pred in baseline_preds.items():
@@ -83,28 +120,54 @@ def assemble_metrics(
     }
 
     hours = list(range(1, actual.shape[1] + 1))
-    horizon = {"hours": hours, "lstm": rmse_per_horizon(lstm_pred, actual)}
+    # Flat per-model RMSE arrays are kept at the top level for backward compatibility with the
+    # existing RMSE-vs-horizon charts; MAE and bias are added as nested {model -> array} blocks.
+    horizon: dict = {"hours": hours, "lstm": rmse_per_horizon(lstm_pred, actual)}
+    mae_block = {"lstm": mae_per_horizon(lstm_pred, actual)}
+    bias_block = {"lstm": bias_per_horizon(lstm_pred, actual)}
     for name, pred in baseline_preds.items():
         horizon[name] = rmse_per_horizon(pred, actual)
+        mae_block[name] = mae_per_horizon(pred, actual)
+        bias_block[name] = bias_per_horizon(pred, actual)
+    horizon["mae"] = mae_block
+    horizon["bias"] = bias_block
 
     return metrics, skill_vs, horizon
 
 
 # --- Plots --------------------------------------------------------------------
 def plot_training_curve(history_csv: Path, out_path: Path) -> None:
-    """Train/val loss + val RMSE per epoch, from ``history.csv``."""
+    """Train/val loss + val RMSE per epoch, from ``history.csv``.
+
+    Final runs train on merged train+val with no validation monitor, so the
+    ``val_loss`` / ``val_rmse_C`` columns are empty. Only series that actually
+    have data are drawn (and the right-hand RMSE axis is added only when needed),
+    so the legend never lists empty curves.
+    """
     df = pd.read_csv(history_csv)
+
+    def has_data(col: str) -> bool:
+        return col in df.columns and df[col].notna().any()
+
     fig, ax1 = plt.subplots(figsize=(8, 5))
     ax1.plot(df["epoch"], df["train_loss"], label="train loss", color="tab:blue")
-    ax1.plot(df["epoch"], df["val_loss"], label="val loss", color="tab:orange")
+    if has_data("val_loss"):
+        ax1.plot(df["epoch"], df["val_loss"], label="val loss", color="tab:orange")
     ax1.set_xlabel("epoch")
     ax1.set_ylabel("loss")
-    ax2 = ax1.twinx()
-    ax2.plot(df["epoch"], df["val_rmse_C"], label="val RMSE (C)", color="tab:green", ls="--")
-    ax2.set_ylabel("val RMSE (C)")
-    lines1, labels1 = ax1.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper right")
+
+    lines, labels = ax1.get_legend_handles_labels()
+    if has_data("val_rmse_C"):
+        ax2 = ax1.twinx()
+        ax2.plot(
+            df["epoch"], df["val_rmse_C"], label="val RMSE (C)", color="tab:green", ls="--"
+        )
+        ax2.set_ylabel("val RMSE (C)")
+        l2, lab2 = ax2.get_legend_handles_labels()
+        lines += l2
+        labels += lab2
+
+    ax1.legend(lines, labels, loc="upper right")
     ax1.set_title("Training curve")
     fig.tight_layout()
     fig.savefig(out_path, dpi=120)

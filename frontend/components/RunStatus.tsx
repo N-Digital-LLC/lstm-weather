@@ -7,17 +7,24 @@ const STATUS_STYLES: Record<string, string> = {
   failed: "bg-rose-500/20 text-rose-300",
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  queued: "в опашка",
+  running: "тече",
+  done: "готов",
+  failed: "грешка",
+};
+
 export function StatusBadge({ status }: { status: string }) {
   return (
     <span className={`badge ${STATUS_STYLES[status] ?? "bg-slate-700 text-slate-200"}`}>
-      {status}
+      {STATUS_LABELS[status] ?? status}
     </span>
   );
 }
 
 export function FinalBadge({ isFinal }: { isFinal: boolean }) {
   if (!isFinal) return <span className="text-slate-600">—</span>;
-  return <span className="badge bg-fuchsia-500/20 text-fuchsia-300">final</span>;
+  return <span className="badge bg-fuchsia-500/20 text-fuchsia-300">финален</span>;
 }
 
 export function ProgressBar({
@@ -35,7 +42,7 @@ export function ProgressBar({
           <div className="h-full bg-amber-400 transition-all" style={{ width: `${pct}%` }} />
         </div>
         <div className="mt-1 text-[11px] text-slate-400">
-          epoch {progress.current_epoch}/{progress.total_epochs}
+          епоха {progress.current_epoch}/{progress.total_epochs}
         </div>
       </div>
     );
